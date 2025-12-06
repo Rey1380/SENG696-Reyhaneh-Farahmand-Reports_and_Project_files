@@ -1,0 +1,173 @@
+[
+  {
+    "file": "sample_0.c",
+    "code": "static void sha256_update(SHA256_CTX *c, const void *data, size_t len)\n{\n    const unsigned char *ptr = data;\n    size_t res;\n    if ((res = c->num)) {\n        res = SHA256_CBLOCK - res;\n        if (len < res)\n            res = len;\n        SHA256_Update(c, ptr, res);\n        ptr += res;\n        len -= res;\n    }\n    res = len % SHA256_CBLOCK;\n    len -= res;\n    if (len) {\n        sha256_block_data_order(c, ptr, len / SHA256_CBLOCK);\n        ptr += len;\n        c->Nh += len >> 29;\n        c->Nl += len <<= 3;\n        if (c->Nl < (unsigned int)len)\n            c->Nh++;\n    }\n    if (res)\n        SHA256_Update(c, ptr, res);\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_1.c",
+    "code": "#define Nb 4\n#define Nr 10\nextern const uint8_t SBox[256];\nextern const uint8_t Rcon[11];\nvoid eturn(int input, uint8_t round_key[Nb * (Nr + 1) * 4]) {\n    int i, j, k;\n    uint8_t temp[4];\n    for (i = 0; i < Nb; i++) {\n        round_key[i * 4] = input & 0xFF;\n        round_key[i * 4 + 1] = (input >> 8) & 0xFF;\n        round_key[i * 4 + 2] = (input >> 16) & 0xFF;\n        round_key[i * 4 + 3] = (input >> 24) & 0xFF;\n    }\n    for (i = Nb; i < Nb * (Nr + 1); i++) {\n        for (j = 0; j < 4; j++) {\n            temp[j] = round_key[(i - 1) * 4 + j];\n        }\n        if (i % Nb == 0) {\n            uint8_t t = temp[0];\n            temp[0] = SBox[temp[1]] ^ Rcon[i / Nb];\n            temp[1] = SBox[temp[2]];\n            temp[2] = SBox[temp[3]];\n            temp[3] = SBox[t];\n        }\n        for (j = 0; j < 4; j++) {\n            round_key[i * 4 + j] = round_key[(i - Nb) * 4 + j] ^ temp[j];\n        }\n    }\n}",
+    "label": "AI",
+    "ai_label": 1,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1.5
+  },
+  {
+    "file": "sample_2.c",
+    "code": "typedef uint8_t BYTE;\nvoid increment_iv(BYTE iv[], int counter_size) {\n    for (int i = 0; i < counter_size; i++) {\n        if (++iv[counter_size - 1 - i] != 0) {\n            break;\n        }\n    }\n}",
+    "label": "AI",
+    "ai_label": 1,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1.5
+  },
+  {
+    "file": "sample_3.c",
+    "code": "static int aes_cfb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,\n                          const unsigned char *in, size_t len)\n{\n    EVP_AES_KEY *dat = EVP_C_DATA(EVP_AES_KEY,ctx);\n    int num = EVP_CIPHER_CTX_get_num(ctx);\n    CRYPTO_cfb128_encrypt(in, out, len, &dat->ks,\n                          ctx->iv, &num,\n                          EVP_CIPHER_CTX_is_encrypting(ctx), dat->block);\n    EVP_CIPHER_CTX_set_num(ctx, num);\n    return 1;\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_4.c",
+    "code": "static void aes_gcm_freectx(void *vctx)\n{\n    PROV_AES_GCM_CTX *ctx = (PROV_AES_GCM_CTX *)vctx;\n    OPENSSL_clear_free(ctx,  sizeof(*ctx));\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_5.c",
+    "code": "static int aes_ocb_einit(void *vctx, const unsigned char *key, size_t keylen,\n                         const unsigned char *iv, size_t ivlen,\n                         const OSSL_PARAM params[])\n{\n    return aes_ocb_init(vctx, key, keylen, iv, ivlen, params, 1);\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_6.c",
+    "code": "uint8_t xtime(uint8_t x) {\n    return (x << 1) ^ ((x & 0x80) ? 0x1B : 0x00);\n}",
+    "label": "AI",
+    "ai_label": 1,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1.5
+  },
+  {
+    "file": "sample_7.c",
+    "code": "static ossl_inline uint32_t GSWAP4(uint32_t n)\n{\n    return (((n & 0x000000FF) << 24)\n            | ((n & 0x0000FF00) << 8)\n            | ((n & 0x00FF0000) >> 8)\n            | ((n & 0xFF000000) >> 24));\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_8.c",
+    "code": "int aes_cbc_test()\n{\n\tWORD key_schedule[60];\n\tBYTE enc_buf[128];\n\tBYTE plaintext[1][32] = {\n\t\t{0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51}\n\t}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_9.c",
+    "code": "std::vector<unsigned char> AES::DecryptCBC(std::vector<unsigned char> in,\n                                           std::vector<unsigned char> key,\n                                           std::vector<unsigned char> iv) {\n  unsigned char *out = DecryptCBC(VectorToArray(in), (unsigned int)in.size(),\n                                  VectorToArray(key), VectorToArray(iv));\n  std::vector<unsigned char> v = ArrayToVector(out, (unsigned int)in.size());\n  delete[] out;\n  return v;\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_10.c",
+    "code": "static int aes_wrap_decrypt(void)\n{\n    int ret = 0;\n    EVP_CIPHER_CTX *ctx;\n    EVP_CIPHER *cipher = NULL;\n    int outlen, tmplen;\n    unsigned char outbuf[1024];\n    printf(\"aes wrap Decrypt:\\n\");\n    printf(\"Ciphertext:\\n\");\n    BIO_dump_fp(stdout, wrap_ct, sizeof(wrap_ct));\n    if ((ctx = EVP_CIPHER_CTX_new()) == NULL)\n        goto err;\n    EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);\n    if ((cipher = EVP_CIPHER_fetch(libctx, \"aes-256-wrap\", propq)) == NULL)\n        goto err;\n    if (!EVP_DecryptInit_ex2(ctx, cipher, wrap_key, wrap_iv,  NULL))\n        goto err;\n    if (!EVP_DecryptUpdate(ctx, outbuf, &outlen, wrap_ct, sizeof(wrap_ct)))\n        goto err;\n    if (!EVP_DecryptFinal_ex(ctx, outbuf + outlen, &tmplen))\n        goto err;\n    outlen += tmplen;\n    printf(\"Plaintext (outlen:%d):\\n\", outlen);\n    BIO_dump_fp(stdout, outbuf, outlen);\n    if (sizeof(wrap_pt) == outlen && !CRYPTO_memcmp(outbuf, wrap_pt, outlen))\n        printf(\"Final plaintext matches original plaintext\\n\");\n    else\n        printf(\"Final plaintext differs from original plaintext\\n\");\n    ret = 1;\nerr:\n    if (!ret)\n        ERR_print_errors_fp(stderr);\n    EVP_CIPHER_free(cipher);\n    EVP_CIPHER_CTX_free(ctx);\n    return ret;\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_11.c",
+    "code": "void aes_key_schedule(const uint8_t key[],\n                      size_t length,\n                      secure_vector<uint32_t>& EK,\n                      secure_vector<uint32_t>& DK,\n                      bool bswap_keys = false) {\n   static const uint32_t RC[10] = {0x01000000,\n                                   0x02000000,\n                                   0x04000000,\n                                   0x08000000,\n                                   0x10000000,\n                                   0x20000000,\n                                   0x40000000,\n                                   0x80000000,\n                                   0x1B000000,\n                                   0x36000000};\n   const size_t X = length / 4;\n   BOTAN_ASSERT_NOMSG(X == 4 || X == 6 || X == 8);\n   const size_t rounds = (length / 4) + 6;\n   BOTAN_ASSERT_NOMSG(rounds == 10 || rounds == 12 || rounds == 14);\n   CT::poison(key, length);\n   const size_t KS_len = length + 28;\n   EK.resize(KS_len);\n   DK.resize(KS_len);\n   for(size_t i = 0; i != X; ++i) {\n      EK[i] = load_be<uint32_t>(key, i);\n   }\n   for(size_t i = X; i < 4 * (rounds + 1); i += X) {\n      EK[i] = EK[i - X] ^ RC[(i - X) / X] ^ rotl<8>(SE_word(EK[i - 1]));\n      for(size_t j = 1; j != X && (i + j) < EK.size(); ++j) {\n         EK[i + j] = EK[i + j - X];\n         if(X == 8 && j == 4) {\n            EK[i + j] ^= SE_word(EK[i + j - 1]);\n         } else {\n            EK[i + j] ^= EK[i + j - 1];\n         }\n      }",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_12.c",
+    "code": "BOTAN_FORCE_INLINE void store_blocks(Altivec64x2 B0, Altivec64x2 B1, Altivec64x2 B2, Altivec64x2 B3, uint8_t out[]) {\n   store_block(B0, out);\n   store_block(B1, out + 16);\n   store_block(B2, out + 16 * 2);\n   store_block(B3, out + 16 * 3);\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_13.c",
+    "code": "void f(unsigned char *state, const unsigned char *round_key) {\n    for (int i = 0; i < 16; ++i) {\n        state[i] ^= round_key[i];\n    }\n}",
+    "label": "AI",
+    "ai_label": 1,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1.5
+  },
+  {
+    "file": "sample_14.c",
+    "code": "int ossl_cipher_capable_aes_cbc_hmac_sha512_etm(void) {\n    unsigned char key[32];\n    unsigned char iv[16];\n    unsigned char input_block[16];\n    unsigned char output_block[16];\n    unsigned char state[16];\n    unsigned char round_key[240];\n    int i, j, round;\n    for (i = 0; i < 32; i++) {\n        key[i] = i;\n    }\n    for (i = 0; i < 16; i++) {\n        iv[i] = i;\n    }\n    for (i = 0; i < 16; i++) {\n        input_block[i] = i;\n    }\n    for (i = 0; i < 16; i++) {\n        state[i] = input_block[i] ^ iv[i];\n    }\n    for (i = 0; i < 32; i++) {\n        round_key[i] = key[i];\n    }\n    for (i = 32; i < 240; i++) {\n        round_key[i] = round_key[i - 32] + 1;\n    }\n    for (round = 0; round < 14; round++) {\n        for (i = 0; i < 16; i++) {\n            state[i] ^= round_key[round * 16 + i];\n        }\n        for (i = 0; i < 16; i++) {\n            state[i] = (state[i] + 1) % 256;\n        }\n        unsigned char temp = state[1];\n        state[1] = state[5];\n        state[5] = state[9];\n        state[9] = state[13];\n        state[13] = temp;\n        for (i = 0; i < 4; i++) {\n            unsigned char mix = state[i] ^ state[i + 4] ^ state[i + 8] ^ state[i + 12];\n            state[i] ^= mix;\n            state[i + 4] ^= mix;\n            state[i + 8] ^= mix;\n            state[i + 12] ^= mix;\n        }\n    }\n    for (i = 0; i < 16; i++) {\n        state[i] ^= round_key[224 + i];\n    }\n    for (i = 0; i < 16; i++) {\n        state[i] = (state[i] + 1) % 256;\n    }\n    unsigned char temp = state[1];\n    state[1] = state[5];\n    state[5] = state[9];\n    state[9] = state[13];\n    state[13] = temp;\n    for (i = 0; i < 16; i++) {\n        output_block[i] = state[i];\n    }\n    return 1;\n}",
+    "label": "AI",
+    "ai_label": 1,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1.5
+  },
+  {
+    "file": "sample_15.c",
+    "code": "#define AES_BLOCK_SIZE 16\nvoid xor_blocks(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, size_t len) {\n    for (size_t i = 0; i < len; ++i) {\n        dst[i] = src1[i] ^ src2[i];\n    }\n}\nvoid galois_multiply(const uint8_t *x, const uint8_t *y, uint8_t *result) {\n    uint8_t z[16] = {0};\n    uint8_t v[16];\n    memcpy(v, y, 16);\n    for (int i = 0; i < 128; ++i) {\n        if (x[i / 8] & (1 << (7 - (i % 8)))) {\n            xor_blocks(z, z, v, 16);\n        }\n        int carry = v[15] & 1;\n        for (int j = 15; j > 0; --j) {\n            v[j] = (v[j] >> 1) | ((v[j - 1] & 1) << 7);\n        }\n        v[0] >>= 1;\n        if (carry) {\n            v[0] ^= 0xe1;\n        }\n    }\n    memcpy(result, z, 16);\n}\nvoid inc_32(uint8_t *counter) {\n    for (int i = AES_BLOCK_SIZE - 1; i >= AES_BLOCK_SIZE - 4; --i) {\n        if (++counter[i] != 0) {\n            break;\n        }\n    }\n}\nvoid aes_encrypt_block(const uint8_t *input, uint8_t *output, const uint8_t *key);\nvoid aes_gcm_encrypt(uint8_t *plaintext, size_t plaintext_len, const uint8_t *aad, size_t aad_len, const uint8_t *key, const uint8_t *iv, uint8_t *ciphertext, uint8_t *tag) {\n    uint8_t j0[AES_BLOCK_SIZE] = {0};\n    memcpy(j0, iv, 12);\n    j0[15] = 1;\n    uint8_t h[AES_BLOCK_SIZE] = {0};\n    aes_encrypt_block(h, h, key);\n    uint8_t s[AES_BLOCK_SIZE] = {0};\n    uint8_t counter[AES_BLOCK_SIZE];\n    memcpy(counter, j0, AES_BLOCK_SIZE);\n    for (size_t i = 0; i < aad_len; i += AES_BLOCK_SIZE) {\n        uint8_t block[AES_BLOCK_SIZE] = {0};\n        size_t block_len = (aad_len - i < AES_BLOCK_SIZE) ? aad_len - i : AES_BLOCK_SIZE;\n        memcpy(block, aad + i, block_len);\n        xor_blocks(s, s, block, AES_BLOCK_SIZE);\n        galois_multiply(s, h, s);\n    }\n    for (size_t i = 0; i < plaintext_len; i += AES_BLOCK_SIZE) {\n        uint8_t block[AES_BLOCK_SIZE] = {0};\n        size_t block_len = (plaintext_len - i < AES_BLOCK_SIZE) ? plaintext_len - i : AES_BLOCK_SIZE;\n        inc_32(counter);\n        aes_encrypt_block(counter, block, key);\n        xor_blocks(block, block, plaintext + i, block_len);\n        memcpy(ciphertext + i, block, block_len);\n        xor_blocks(s, s, block, AES_BLOCK_SIZE);\n        galois_multiply(s, h, s);\n    }\n    uint8_t len_block[AES_BLOCK_SIZE] = {0};\n    uint64_t aad_bits = aad_len * 8;\n    uint64_t plaintext_bits = plaintext_len * 8;\n    memcpy(len_block, &aad_bits, 8);\n    memcpy(len_block + 8, &plaintext_bits, 8);\n    xor_blocks(s, s, len_block, AES_BLOCK_SIZE);\n    galois_multiply(s, h, s);\n    aes_encrypt_block(j0, tag, key);\n    xor_blocks(tag, tag, s, AES_BLOCK_SIZE);\n}",
+    "label": "AI",
+    "ai_label": 1,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1.5
+  },
+  {
+    "file": "sample_16.c",
+    "code": "#define AES_BLOCK_SIZE 16\nstatic const uint8_t R[] = {0x00, 0xa6, 0x5a, 0x3c, 0x58, 0xe2, 0x90, 0x9e, 0x6b};\nvoid aes_encrypt_block(const uint8_t *in, uint8_t *out, const uint8_t *round_keys, int num_rounds);\nvoid aes_wrap_encrypt(uint8_t *key, uint8_t *plaintext, uint8_t *ciphertext, size_t n, uint8_t *iv) {\n    uint8_t a[AES_BLOCK_SIZE];\n    uint8_t b[AES_BLOCK_SIZE];\n    uint8_t r[n][AES_BLOCK_SIZE];\n    int i, j;\n    memcpy(a, iv, 8);\n    for (i = 0; i < n; i++) {\n        memcpy(r[i], plaintext + 8 * i, 8);\n    }\n    for (j = 0; j <= 5; j++) {\n        for (i = 0; i < n; i++) {\n            memcpy(b, a, 8);\n            memcpy(b + 8, r[i], 8);\n            aes_encrypt_block(b, b, key, 10);\n            memcpy(a, b, 8);\n            a[7] ^= ((n * j) + i + 1);\n            memcpy(r[i], b + 8, 8);\n        }\n    }\n    memcpy(ciphertext, a, 8);\n    for (i = 0; i < n; i++) {\n        memcpy(ciphertext + 8 * (i + 1), r[i], 8);\n    }\n}",
+    "label": "AI",
+    "ai_label": 1,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1.5
+  },
+  {
+    "file": "sample_17.c",
+    "code": "WORD SubWord(WORD word)\n{\n\tunsigned int result;\n\tresult = (int)aes_sbox[(word >> 4) & 0x0000000F][word & 0x0000000F];\n\tresult += (int)aes_sbox[(word >> 12) & 0x0000000F][(word >> 8) & 0x0000000F] << 8;\n\tresult += (int)aes_sbox[(word >> 20) & 0x0000000F][(word >> 16) & 0x0000000F] << 16;\n\tresult += (int)aes_sbox[(word >> 28) & 0x0000000F][(word >> 24) & 0x0000000F] << 24;\n\treturn(result);\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  },
+  {
+    "file": "sample_18.c",
+    "code": "BOTAN_FORCE_INLINE BOTAN_FN_ISA_AES void enc(uint8x16_t& B, uint8x16_t K) {\n   B = vaesmcq_u8(vaeseq_u8(B, K));\n}",
+    "label": "Human",
+    "ai_label": 0,
+    "severity_text": "LOW",
+    "severity_score": 1,
+    "risk_score": 1
+  }
+]

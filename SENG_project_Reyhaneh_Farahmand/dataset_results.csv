@@ -1,0 +1,364 @@
+file,label,ai_label,severity_text,severity_score,risk_score,code
+sample_0.c,Human,0,LOW,1,1,"static void sha256_update(SHA256_CTX *c, const void *data, size_t len)
+{
+    const unsigned char *ptr = data;
+    size_t res;
+    if ((res = c->num)) {
+        res = SHA256_CBLOCK - res;
+        if (len < res)
+            res = len;
+        SHA256_Update(c, ptr, res);
+        ptr += res;
+        len -= res;
+    }
+    res = len % SHA256_CBLOCK;
+    len -= res;
+    if (len) {
+        sha256_block_data_order(c, ptr, len / SHA256_CBLOCK);
+        ptr += len;
+        c->Nh += len >> 29;
+        c->Nl += len <<= 3;
+        if (c->Nl < (unsigned int)len)
+            c->Nh++;
+    }
+    if (res)
+        SHA256_Update(c, ptr, res);
+}"
+sample_1.c,AI,1,LOW,1,1.5,"#define Nb 4
+#define Nr 10
+extern const uint8_t SBox[256];
+extern const uint8_t Rcon[11];
+void eturn(int input, uint8_t round_key[Nb * (Nr + 1) * 4]) {
+    int i, j, k;
+    uint8_t temp[4];
+    for (i = 0; i < Nb; i++) {
+        round_key[i * 4] = input & 0xFF;
+        round_key[i * 4 + 1] = (input >> 8) & 0xFF;
+        round_key[i * 4 + 2] = (input >> 16) & 0xFF;
+        round_key[i * 4 + 3] = (input >> 24) & 0xFF;
+    }
+    for (i = Nb; i < Nb * (Nr + 1); i++) {
+        for (j = 0; j < 4; j++) {
+            temp[j] = round_key[(i - 1) * 4 + j];
+        }
+        if (i % Nb == 0) {
+            uint8_t t = temp[0];
+            temp[0] = SBox[temp[1]] ^ Rcon[i / Nb];
+            temp[1] = SBox[temp[2]];
+            temp[2] = SBox[temp[3]];
+            temp[3] = SBox[t];
+        }
+        for (j = 0; j < 4; j++) {
+            round_key[i * 4 + j] = round_key[(i - Nb) * 4 + j] ^ temp[j];
+        }
+    }
+}"
+sample_2.c,AI,1,LOW,1,1.5,"typedef uint8_t BYTE;
+void increment_iv(BYTE iv[], int counter_size) {
+    for (int i = 0; i < counter_size; i++) {
+        if (++iv[counter_size - 1 - i] != 0) {
+            break;
+        }
+    }
+}"
+sample_3.c,Human,0,LOW,1,1,"static int aes_cfb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                          const unsigned char *in, size_t len)
+{
+    EVP_AES_KEY *dat = EVP_C_DATA(EVP_AES_KEY,ctx);
+    int num = EVP_CIPHER_CTX_get_num(ctx);
+    CRYPTO_cfb128_encrypt(in, out, len, &dat->ks,
+                          ctx->iv, &num,
+                          EVP_CIPHER_CTX_is_encrypting(ctx), dat->block);
+    EVP_CIPHER_CTX_set_num(ctx, num);
+    return 1;
+}"
+sample_4.c,Human,0,LOW,1,1,"static void aes_gcm_freectx(void *vctx)
+{
+    PROV_AES_GCM_CTX *ctx = (PROV_AES_GCM_CTX *)vctx;
+    OPENSSL_clear_free(ctx,  sizeof(*ctx));
+}"
+sample_5.c,Human,0,LOW,1,1,"static int aes_ocb_einit(void *vctx, const unsigned char *key, size_t keylen,
+                         const unsigned char *iv, size_t ivlen,
+                         const OSSL_PARAM params[])
+{
+    return aes_ocb_init(vctx, key, keylen, iv, ivlen, params, 1);
+}"
+sample_6.c,AI,1,LOW,1,1.5,"uint8_t xtime(uint8_t x) {
+    return (x << 1) ^ ((x & 0x80) ? 0x1B : 0x00);
+}"
+sample_7.c,Human,0,LOW,1,1,"static ossl_inline uint32_t GSWAP4(uint32_t n)
+{
+    return (((n & 0x000000FF) << 24)
+            | ((n & 0x0000FF00) << 8)
+            | ((n & 0x00FF0000) >> 8)
+            | ((n & 0xFF000000) >> 24));
+}"
+sample_8.c,Human,0,LOW,1,1,"int aes_cbc_test()
+{
+	WORD key_schedule[60];
+	BYTE enc_buf[128];
+	BYTE plaintext[1][32] = {
+		{0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51}
+	}"
+sample_9.c,Human,0,LOW,1,1,"std::vector<unsigned char> AES::DecryptCBC(std::vector<unsigned char> in,
+                                           std::vector<unsigned char> key,
+                                           std::vector<unsigned char> iv) {
+  unsigned char *out = DecryptCBC(VectorToArray(in), (unsigned int)in.size(),
+                                  VectorToArray(key), VectorToArray(iv));
+  std::vector<unsigned char> v = ArrayToVector(out, (unsigned int)in.size());
+  delete[] out;
+  return v;
+}"
+sample_10.c,Human,0,LOW,1,1,"static int aes_wrap_decrypt(void)
+{
+    int ret = 0;
+    EVP_CIPHER_CTX *ctx;
+    EVP_CIPHER *cipher = NULL;
+    int outlen, tmplen;
+    unsigned char outbuf[1024];
+    printf(""aes wrap Decrypt:\n"");
+    printf(""Ciphertext:\n"");
+    BIO_dump_fp(stdout, wrap_ct, sizeof(wrap_ct));
+    if ((ctx = EVP_CIPHER_CTX_new()) == NULL)
+        goto err;
+    EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+    if ((cipher = EVP_CIPHER_fetch(libctx, ""aes-256-wrap"", propq)) == NULL)
+        goto err;
+    if (!EVP_DecryptInit_ex2(ctx, cipher, wrap_key, wrap_iv,  NULL))
+        goto err;
+    if (!EVP_DecryptUpdate(ctx, outbuf, &outlen, wrap_ct, sizeof(wrap_ct)))
+        goto err;
+    if (!EVP_DecryptFinal_ex(ctx, outbuf + outlen, &tmplen))
+        goto err;
+    outlen += tmplen;
+    printf(""Plaintext (outlen:%d):\n"", outlen);
+    BIO_dump_fp(stdout, outbuf, outlen);
+    if (sizeof(wrap_pt) == outlen && !CRYPTO_memcmp(outbuf, wrap_pt, outlen))
+        printf(""Final plaintext matches original plaintext\n"");
+    else
+        printf(""Final plaintext differs from original plaintext\n"");
+    ret = 1;
+err:
+    if (!ret)
+        ERR_print_errors_fp(stderr);
+    EVP_CIPHER_free(cipher);
+    EVP_CIPHER_CTX_free(ctx);
+    return ret;
+}"
+sample_11.c,Human,0,LOW,1,1,"void aes_key_schedule(const uint8_t key[],
+                      size_t length,
+                      secure_vector<uint32_t>& EK,
+                      secure_vector<uint32_t>& DK,
+                      bool bswap_keys = false) {
+   static const uint32_t RC[10] = {0x01000000,
+                                   0x02000000,
+                                   0x04000000,
+                                   0x08000000,
+                                   0x10000000,
+                                   0x20000000,
+                                   0x40000000,
+                                   0x80000000,
+                                   0x1B000000,
+                                   0x36000000};
+   const size_t X = length / 4;
+   BOTAN_ASSERT_NOMSG(X == 4 || X == 6 || X == 8);
+   const size_t rounds = (length / 4) + 6;
+   BOTAN_ASSERT_NOMSG(rounds == 10 || rounds == 12 || rounds == 14);
+   CT::poison(key, length);
+   const size_t KS_len = length + 28;
+   EK.resize(KS_len);
+   DK.resize(KS_len);
+   for(size_t i = 0; i != X; ++i) {
+      EK[i] = load_be<uint32_t>(key, i);
+   }
+   for(size_t i = X; i < 4 * (rounds + 1); i += X) {
+      EK[i] = EK[i - X] ^ RC[(i - X) / X] ^ rotl<8>(SE_word(EK[i - 1]));
+      for(size_t j = 1; j != X && (i + j) < EK.size(); ++j) {
+         EK[i + j] = EK[i + j - X];
+         if(X == 8 && j == 4) {
+            EK[i + j] ^= SE_word(EK[i + j - 1]);
+         } else {
+            EK[i + j] ^= EK[i + j - 1];
+         }
+      }"
+sample_12.c,Human,0,LOW,1,1,"BOTAN_FORCE_INLINE void store_blocks(Altivec64x2 B0, Altivec64x2 B1, Altivec64x2 B2, Altivec64x2 B3, uint8_t out[]) {
+   store_block(B0, out);
+   store_block(B1, out + 16);
+   store_block(B2, out + 16 * 2);
+   store_block(B3, out + 16 * 3);
+}"
+sample_13.c,AI,1,LOW,1,1.5,"void f(unsigned char *state, const unsigned char *round_key) {
+    for (int i = 0; i < 16; ++i) {
+        state[i] ^= round_key[i];
+    }
+}"
+sample_14.c,AI,1,LOW,1,1.5,"int ossl_cipher_capable_aes_cbc_hmac_sha512_etm(void) {
+    unsigned char key[32];
+    unsigned char iv[16];
+    unsigned char input_block[16];
+    unsigned char output_block[16];
+    unsigned char state[16];
+    unsigned char round_key[240];
+    int i, j, round;
+    for (i = 0; i < 32; i++) {
+        key[i] = i;
+    }
+    for (i = 0; i < 16; i++) {
+        iv[i] = i;
+    }
+    for (i = 0; i < 16; i++) {
+        input_block[i] = i;
+    }
+    for (i = 0; i < 16; i++) {
+        state[i] = input_block[i] ^ iv[i];
+    }
+    for (i = 0; i < 32; i++) {
+        round_key[i] = key[i];
+    }
+    for (i = 32; i < 240; i++) {
+        round_key[i] = round_key[i - 32] + 1;
+    }
+    for (round = 0; round < 14; round++) {
+        for (i = 0; i < 16; i++) {
+            state[i] ^= round_key[round * 16 + i];
+        }
+        for (i = 0; i < 16; i++) {
+            state[i] = (state[i] + 1) % 256;
+        }
+        unsigned char temp = state[1];
+        state[1] = state[5];
+        state[5] = state[9];
+        state[9] = state[13];
+        state[13] = temp;
+        for (i = 0; i < 4; i++) {
+            unsigned char mix = state[i] ^ state[i + 4] ^ state[i + 8] ^ state[i + 12];
+            state[i] ^= mix;
+            state[i + 4] ^= mix;
+            state[i + 8] ^= mix;
+            state[i + 12] ^= mix;
+        }
+    }
+    for (i = 0; i < 16; i++) {
+        state[i] ^= round_key[224 + i];
+    }
+    for (i = 0; i < 16; i++) {
+        state[i] = (state[i] + 1) % 256;
+    }
+    unsigned char temp = state[1];
+    state[1] = state[5];
+    state[5] = state[9];
+    state[9] = state[13];
+    state[13] = temp;
+    for (i = 0; i < 16; i++) {
+        output_block[i] = state[i];
+    }
+    return 1;
+}"
+sample_15.c,AI,1,LOW,1,1.5,"#define AES_BLOCK_SIZE 16
+void xor_blocks(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, size_t len) {
+    for (size_t i = 0; i < len; ++i) {
+        dst[i] = src1[i] ^ src2[i];
+    }
+}
+void galois_multiply(const uint8_t *x, const uint8_t *y, uint8_t *result) {
+    uint8_t z[16] = {0};
+    uint8_t v[16];
+    memcpy(v, y, 16);
+    for (int i = 0; i < 128; ++i) {
+        if (x[i / 8] & (1 << (7 - (i % 8)))) {
+            xor_blocks(z, z, v, 16);
+        }
+        int carry = v[15] & 1;
+        for (int j = 15; j > 0; --j) {
+            v[j] = (v[j] >> 1) | ((v[j - 1] & 1) << 7);
+        }
+        v[0] >>= 1;
+        if (carry) {
+            v[0] ^= 0xe1;
+        }
+    }
+    memcpy(result, z, 16);
+}
+void inc_32(uint8_t *counter) {
+    for (int i = AES_BLOCK_SIZE - 1; i >= AES_BLOCK_SIZE - 4; --i) {
+        if (++counter[i] != 0) {
+            break;
+        }
+    }
+}
+void aes_encrypt_block(const uint8_t *input, uint8_t *output, const uint8_t *key);
+void aes_gcm_encrypt(uint8_t *plaintext, size_t plaintext_len, const uint8_t *aad, size_t aad_len, const uint8_t *key, const uint8_t *iv, uint8_t *ciphertext, uint8_t *tag) {
+    uint8_t j0[AES_BLOCK_SIZE] = {0};
+    memcpy(j0, iv, 12);
+    j0[15] = 1;
+    uint8_t h[AES_BLOCK_SIZE] = {0};
+    aes_encrypt_block(h, h, key);
+    uint8_t s[AES_BLOCK_SIZE] = {0};
+    uint8_t counter[AES_BLOCK_SIZE];
+    memcpy(counter, j0, AES_BLOCK_SIZE);
+    for (size_t i = 0; i < aad_len; i += AES_BLOCK_SIZE) {
+        uint8_t block[AES_BLOCK_SIZE] = {0};
+        size_t block_len = (aad_len - i < AES_BLOCK_SIZE) ? aad_len - i : AES_BLOCK_SIZE;
+        memcpy(block, aad + i, block_len);
+        xor_blocks(s, s, block, AES_BLOCK_SIZE);
+        galois_multiply(s, h, s);
+    }
+    for (size_t i = 0; i < plaintext_len; i += AES_BLOCK_SIZE) {
+        uint8_t block[AES_BLOCK_SIZE] = {0};
+        size_t block_len = (plaintext_len - i < AES_BLOCK_SIZE) ? plaintext_len - i : AES_BLOCK_SIZE;
+        inc_32(counter);
+        aes_encrypt_block(counter, block, key);
+        xor_blocks(block, block, plaintext + i, block_len);
+        memcpy(ciphertext + i, block, block_len);
+        xor_blocks(s, s, block, AES_BLOCK_SIZE);
+        galois_multiply(s, h, s);
+    }
+    uint8_t len_block[AES_BLOCK_SIZE] = {0};
+    uint64_t aad_bits = aad_len * 8;
+    uint64_t plaintext_bits = plaintext_len * 8;
+    memcpy(len_block, &aad_bits, 8);
+    memcpy(len_block + 8, &plaintext_bits, 8);
+    xor_blocks(s, s, len_block, AES_BLOCK_SIZE);
+    galois_multiply(s, h, s);
+    aes_encrypt_block(j0, tag, key);
+    xor_blocks(tag, tag, s, AES_BLOCK_SIZE);
+}"
+sample_16.c,AI,1,LOW,1,1.5,"#define AES_BLOCK_SIZE 16
+static const uint8_t R[] = {0x00, 0xa6, 0x5a, 0x3c, 0x58, 0xe2, 0x90, 0x9e, 0x6b};
+void aes_encrypt_block(const uint8_t *in, uint8_t *out, const uint8_t *round_keys, int num_rounds);
+void aes_wrap_encrypt(uint8_t *key, uint8_t *plaintext, uint8_t *ciphertext, size_t n, uint8_t *iv) {
+    uint8_t a[AES_BLOCK_SIZE];
+    uint8_t b[AES_BLOCK_SIZE];
+    uint8_t r[n][AES_BLOCK_SIZE];
+    int i, j;
+    memcpy(a, iv, 8);
+    for (i = 0; i < n; i++) {
+        memcpy(r[i], plaintext + 8 * i, 8);
+    }
+    for (j = 0; j <= 5; j++) {
+        for (i = 0; i < n; i++) {
+            memcpy(b, a, 8);
+            memcpy(b + 8, r[i], 8);
+            aes_encrypt_block(b, b, key, 10);
+            memcpy(a, b, 8);
+            a[7] ^= ((n * j) + i + 1);
+            memcpy(r[i], b + 8, 8);
+        }
+    }
+    memcpy(ciphertext, a, 8);
+    for (i = 0; i < n; i++) {
+        memcpy(ciphertext + 8 * (i + 1), r[i], 8);
+    }
+}"
+sample_17.c,Human,0,LOW,1,1,"WORD SubWord(WORD word)
+{
+	unsigned int result;
+	result = (int)aes_sbox[(word >> 4) & 0x0000000F][word & 0x0000000F];
+	result += (int)aes_sbox[(word >> 12) & 0x0000000F][(word >> 8) & 0x0000000F] << 8;
+	result += (int)aes_sbox[(word >> 20) & 0x0000000F][(word >> 16) & 0x0000000F] << 16;
+	result += (int)aes_sbox[(word >> 28) & 0x0000000F][(word >> 24) & 0x0000000F] << 24;
+	return(result);
+}"
+sample_18.c,Human,0,LOW,1,1,"BOTAN_FORCE_INLINE BOTAN_FN_ISA_AES void enc(uint8x16_t& B, uint8x16_t K) {
+   B = vaesmcq_u8(vaeseq_u8(B, K));
+}"
